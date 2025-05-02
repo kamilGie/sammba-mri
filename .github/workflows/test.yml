@@ -14,17 +14,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v6      # buduj i ładuj obraz lokalnie :contentReference[oaicite:1]{index=1}
-        with:
-          context: .
-          file: ./Dockerfile
-          load: true
-          tags: user/app:test
-
-      - name: Run container smoke-test
+      - name: Build and start all services
         run: |
-          docker run --rm user/app:test echo "OK" 
+          docker-compose up --build -d
