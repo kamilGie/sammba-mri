@@ -1,0 +1,61 @@
+name: Test Docker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Task1/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Task1/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Release, Debug]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Conan
+        run: pip install conan
+
+      - name: Install build tools
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update && sudo apt-get install -y build-essential cmake
+            sudo apt install gcc-13 g++-13
+            sudo apt install locales
+            sudo locale-gen pl_PL.UTF-8
+            sudo update-locale
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install cmake
+          fi
+        shell: bash
+
+      - name: Configure Conan
+        run: |
+          conan profile detect --force
+
+      - name: Build with Conan
+        run: |
+          cd Task1
+          conan build . --build=missing -s build_type=${{ matrix.build_type }}
+
+      - name: Run tests
+        run: |
+          ./Task1/build/${{ matrix.build_type }}/Task1-ut
+        shell: bashn 
