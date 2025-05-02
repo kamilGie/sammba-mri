@@ -1,0 +1,10 @@
+services:
+  sammba:
+    build:
+      context: .
+      dockerfile: dockerfile
+    volumes:
+      - ./:/workspace        # montuj cały projekt do /workspace
+    ports:
+      - "8888:8888"          # przekieruj port 8888 host → kontener
+    working_dir: /workspace # ustaw katalog roboczy

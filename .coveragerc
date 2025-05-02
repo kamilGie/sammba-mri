@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = sammba
+omit =
+    */sammba/externals/*
+    */setup.py
+

@@ -1,0 +1,46 @@
+dist: xenial
+sudo: required
+
+language: python
+python: "3.5"
+
+virtualenv:
+  system_site_packages: true
+
+env:
+  global:
+    - TEST_RUN_FOLDER="/tmp" # folder where the tests are run from
+
+matrix:
+  # Do not wait for the allowed_failures entry to finish before
+  # setting the status
+  fast_finish: true
+  allow_failures:
+    # allow_failures seems to be keyed on the python version
+    - python: 3.5
+  include:
+    # without matplotlib
+    - env: DISTRIB="conda" PYTHON_VERSION="3.5"
+           NUMPY_VERSION="1.14.0" SCIPY_VERSION="*"
+           SCIKIT_LEARN_VERSION="*" COVERAGE="true"
+           NIPYPE="1.0.4"
+    - env: DISTRIB="conda" PYTHON_VERSION="3.5"
+           NUMPY_VERSION="*" SCIPY_VERSION="*"
+           SCIKIT_LEARN_VERSION="*" MATPLOTLIB_VERSION="*" COVERAGE="true"
+           NIPYPE="1.0.4"
+    - env: DISTRIB="conda" PYTHON_VERSION="3.6"
+           NUMPY_VERSION="*" SCIPY_VERSION="*"
+           SCIKIT_LEARN_VERSION="*" MATPLOTLIB_VERSION="*" COVERAGE="true"
+           NIPYPE="*"
+    - env: DISTRIB="conda" PYTHON_VERSION="3.7"
+           NUMPY_VERSION="*" SCIPY_VERSION="*"
+           SCIKIT_LEARN_VERSION="*" MATPLOTLIB_VERSION="*" COVERAGE="true"
+           NIPYPE="*"
+
+install: source continuous_integration/install.sh
+
+before_script: make clean
+
+script: source continuous_integration/test_script.sh
+
+after_success: source continuous_integration/after_success.sh
