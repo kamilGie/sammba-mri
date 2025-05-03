@@ -2,7 +2,6 @@ services:
   sammba:
     build:
       context: .
-      dockerfile: dockerfile
     volumes:
       - ./:/workspace        # montuj cały projekt do /workspace
     ports:

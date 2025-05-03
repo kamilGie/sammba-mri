@@ -13,6 +13,8 @@ dependencies:
   - scikit-learn>=0.19
   - matplotlib>=1.5.1
   - nose>=1.2.1
+  - jupyterlab
+  - notebook
   - pip
   - pip:
       - doctest-ignore-unicode
