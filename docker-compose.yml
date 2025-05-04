@@ -1,0 +1,10 @@
+services:
+  sammba:
+    build:
+      context: .
+    platform: linux/amd64
+    volumes:
+      - ./:/workspace
+    ports:
+      - "8888:8888"
+    working_dir: /workspace
