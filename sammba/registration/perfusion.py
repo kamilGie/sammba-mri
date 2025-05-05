@@ -1,21 +1,28 @@
 import warnings
 import os
-from sklearn.datasets.base import Bunch
+from sklearn.utils import Bunch
 from nipype.caching import Memory
 from nipype.interfaces import afni
 from nipype.utils.filemanip import fname_presuffix
 from nilearn._utils.exceptions import VisibleDeprecationWarning
-from .base import (_rigid_body_register, _warp, _per_slice_qwarp)
+from .base import _rigid_body_register, _warp, _per_slice_qwarp
 
 
-def coregister(unifized_anat_file,
-               unbiased_m0_file, write_dir, anat_brain_file=None,
-               m0_brain_file=None,
-               prior_rigid_body_registration=None,
-               reorient_only=False,
-               apply_to_file=None,
-               voxel_size_x=.1, voxel_size_y=.1, caching=False,
-               verbose=True, **environ_kwargs):
+def coregister(
+    unifized_anat_file,
+    unbiased_m0_file,
+    write_dir,
+    anat_brain_file=None,
+    m0_brain_file=None,
+    prior_rigid_body_registration=None,
+    reorient_only=False,
+    apply_to_file=None,
+    voxel_size_x=0.1,
+    voxel_size_y=0.1,
+    caching=False,
+    verbose=True,
+    **environ_kwargs
+):
     """
     Coregistration of the subject's M0 and anatomical images.
     The M0 volume is aligned to the anatomical, first with a
@@ -67,20 +74,22 @@ def coregister(unifized_anat_file,
     `RATS <http://www.iibi.uiowa.edu/content/rats-overview/>`_
     """
     if prior_rigid_body_registration is not None:
-        warn_str = ("The parameter 'prior_rigid_body_registration' is "
-                    "deprecated and will be removed in sammba-mri next "
-                    "release. Use parameter 'reorient_only' instead.")
+        warn_str = (
+            "The parameter 'prior_rigid_body_registration' is "
+            "deprecated and will be removed in sammba-mri next "
+            "release. Use parameter 'reorient_only' instead."
+        )
         warnings.warn(warn_str, VisibleDeprecationWarning, stacklevel=2)
-        reorient_only = not(prior_rigid_body_registration)
+        reorient_only = not (prior_rigid_body_registration)
 
-    environ = {'AFNI_DECONFLICT': 'OVERWRITE'}
-    for (key, value) in environ_kwargs.items():
+    environ = {"AFNI_DECONFLICT": "OVERWRITE"}
+    for key, value in environ_kwargs.items():
         environ[key] = value
 
     if verbose:
-        terminal_output = 'allatonce'
+        terminal_output = "allatonce"
     else:
-        terminal_output = 'none'
+        terminal_output = "none"
 
     if caching:
         memory = Memory(write_dir)
@@ -97,62 +106,75 @@ def coregister(unifized_anat_file,
         allineated_anat_file = unifized_anat_file
     else:
         if anat_brain_file is None:
-            raise ValueError("'anat_brain_mask_file' is needed for prior "
-                             "rigid-body registration")
+            raise ValueError(
+                "'anat_brain_mask_file' is needed for prior " "rigid-body registration"
+            )
         if m0_brain_file is None:
-            raise ValueError("'m0_brain_mask_file' is needed for prior "
-                             "rigid-body registration")
-        allineated_anat_file, rigid_transform_file = \
-            _rigid_body_register(unifized_anat_file,
-                                 unbiased_m0_file,
-                                 anat_brain_file,
-                                 m0_brain_file,
-                                 write_dir,
-                                 caching=caching,
-                                 terminal_output=terminal_output,
-                                 environ=environ)
-        output_files.extend([rigid_transform_file,
-                             allineated_anat_file])
+            raise ValueError(
+                "'m0_brain_mask_file' is needed for prior " "rigid-body registration"
+            )
+        allineated_anat_file, rigid_transform_file = _rigid_body_register(
+            unifized_anat_file,
+            unbiased_m0_file,
+            anat_brain_file,
+            m0_brain_file,
+            write_dir,
+            caching=caching,
+            terminal_output=terminal_output,
+            environ=environ,
+        )
+        output_files.extend([rigid_transform_file, allineated_anat_file])
 
     ############################################
     # Nonlinear registration anat -> mean func #
     ############################################
-    registered_anat_oblique_file, mat_file =\
-        _warp(allineated_anat_file, unbiased_m0_file, write_dir,
-              caching=caching, verbose=verbose,
-              terminal_output=terminal_output,
-              environ=environ)
+    registered_anat_oblique_file, mat_file = _warp(
+        allineated_anat_file,
+        unbiased_m0_file,
+        write_dir,
+        caching=caching,
+        verbose=verbose,
+        terminal_output=terminal_output,
+        environ=environ,
+    )
 
     # Concatenate all the anat to func tranforms
     output_files.append(mat_file)
-    transform_file = fname_presuffix(registered_anat_oblique_file,
-                                     suffix='_anat_to_func.aff12.1D',
-                                     use_ext=False)
-    _ = catmatvec(in_file=[(mat_file, 'ONELINE')],
-                  oneline=True,
-                  out_file=transform_file,
-                  environ=environ)
+    transform_file = fname_presuffix(
+        registered_anat_oblique_file, suffix="_anat_to_func.aff12.1D", use_ext=False
+    )
+    _ = catmatvec(
+        in_file=[(mat_file, "ONELINE")],
+        oneline=True,
+        out_file=transform_file,
+        environ=environ,
+    )
 
     ##################################################
     # Per-slice non-linear registration func -> anat #
     ##################################################
-    warped_m0_file, warp_files, warped_apply_to_file =\
-        _per_slice_qwarp(unbiased_m0_file,
-                         registered_anat_oblique_file,
-                         voxel_size_x, voxel_size_y,
-                         apply_to_file=apply_to_file,
-                         verbose=verbose,
-                         write_dir=write_dir,
-                         caching=caching, terminal_output=terminal_output,
-                         environ=environ)
+    warped_m0_file, warp_files, warped_apply_to_file = _per_slice_qwarp(
+        unbiased_m0_file,
+        registered_anat_oblique_file,
+        voxel_size_x,
+        voxel_size_y,
+        apply_to_file=apply_to_file,
+        verbose=verbose,
+        write_dir=write_dir,
+        caching=caching,
+        terminal_output=terminal_output,
+        environ=environ,
+    )
 
     # Remove the intermediate outputs
     if not caching:
         for out_file in output_files:
             os.remove(out_file)
 
-    return Bunch(coreg_apply_to_=warped_apply_to_file,
-                  coreg_m0_=warped_m0_file,
-                  coreg_anat_=registered_anat_oblique_file,
-                  coreg_transform_=transform_file,
-                  coreg_warps_=warp_files)
+    return Bunch(
+        coreg_apply_to_=warped_apply_to_file,
+        coreg_m0_=warped_m0_file,
+        coreg_anat_=registered_anat_oblique_file,
+        coreg_transform_=transform_file,
+        coreg_warps_=warp_files,
+    )
